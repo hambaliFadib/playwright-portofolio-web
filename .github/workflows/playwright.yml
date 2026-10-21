@@ -57,6 +57,7 @@ jobs:
           echo "Portfolio application revision: $app_sha"
 
       - name: Set up Node.js 22
+        id: node_setup
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -66,14 +67,17 @@ jobs:
             portfolio-app/package-lock.json
 
       - name: Install locked QA dependencies
+        id: qa_deps
         working-directory: portfolio-qa
         run: npm ci
 
       - name: Install locked application dependencies
+        id: app_deps
         working-directory: portfolio-app
         run: npm ci
 
       - name: Initialize separate checkout path
+        id: checkout_paths
         shell: bash
         run: |
           set -euo pipefail
@@ -125,14 +129,52 @@ jobs:
         run: node scripts/record-provenance.js --final
 
       - name: Validate evidence manifest contracts
+        id: evidence_selftest
         if: always()
         working-directory: portfolio-qa
         run: npm run evidence:selftest
 
       - name: Record and verify evidence manifest
+        id: evidence_manifest
         if: always()
         working-directory: portfolio-qa
         run: npm run evidence:write && npm run evidence:verify
+
+      - name: Capture early-failure stages using CommonJS
+        if: always()
+        env:
+          STAGE_CALLER: not-applicable
+          STAGE_CHECKOUT_QA: ${{ steps.checkout_qa.outcome }}
+          STAGE_CHECKOUT_APP: ${{ steps.checkout_app.outcome }}
+          STAGE_REVISIONS: ${{ steps.revisions.outcome }}
+          STAGE_NODE_SETUP: ${{ steps.node_setup.outcome }}
+          STAGE_QA_DEPS: ${{ steps.qa_deps.outcome }}
+          STAGE_CHECKOUT_PATHS: ${{ steps.checkout_paths.outcome }}
+          STAGE_INITIAL_PROVENANCE: ${{ steps.provenance.outcome }}
+          STAGE_FINAL_PROVENANCE: ${{ steps.final_provenance.outcome }}
+          STAGE_APP_DEPS: ${{ steps.app_deps.outcome }}
+          STAGE_GATE_SELFTEST: not-applicable
+          STAGE_POLICY_SELFTEST: ${{ steps.policy_selftest.outcome }}
+          STAGE_TRIAGE_SELFTEST: ${{ steps.triage_selftest.outcome }}
+          STAGE_AI_CONTRACT: ${{ steps.ai_contract.outcome }}
+          STAGE_APP_BUILD: ${{ steps.app_build.outcome }}
+          STAGE_CHROMIUM: ${{ steps.chromium.outcome }}
+          STAGE_VALIDATE: ${{ steps.validate.outcome }}
+          STAGE_REPORT_GATE: not-applicable
+          STAGE_EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
+          STAGE_EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
+          QA_SOURCE_PIN: ${{ github.sha }}
+          APP_TEST_PIN: 5915098e2aa507a451f58e70547abded3023f8d9
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/portfolio-qa-early-evidence"
+          if [[ -f "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" ]]; then
+            node "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" write
+            node "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" selftest
+          else
+            node -e 'const fs=require("node:fs"),path=require("node:path");const d=path.join(process.env.RUNNER_TEMP,"portfolio-qa-early-evidence");fs.mkdirSync(d,{recursive:true});fs.writeFileSync(path.join(d,"early-failure.json"),JSON.stringify({schemaVersion:1,kind:"portfolio-qa-early-failure",evidenceStatus:"incomplete",reason:"QA checkout unavailable",context:{runId:process.env.GITHUB_RUN_ID||null,runAttempt:process.env.GITHUB_RUN_ATTEMPT||null},note:"Advisory only; never changes CI verdict"},null,2)+"\n")'
+          fi
 
       - name: Write GitHub job summary
         if: always()
@@ -167,6 +209,15 @@ jobs:
             echo
             echo "Full revision/runtime data is in artifacts/provenance.json. Reports and server/build logs are uploaded as workflow artifacts."
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload early-failure evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portfolio-qa-early-evidence
+          path: ${{ runner.temp }}/portfolio-qa-early-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload reports and failure evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
