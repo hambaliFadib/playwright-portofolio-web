@@ -118,6 +118,12 @@ jobs:
         working-directory: portfolio-qa
         run: node scripts/with-app-server.js
 
+      - name: P3E enforcement negative canary (expected failure, test branch only)
+        shell: bash
+        run: |
+          echo 'Intentional CI failure to confirm QA main required-check enforcement.' >&2
+          exit 1
+
       - name: Write GitHub job summary
         if: always()
         env:
