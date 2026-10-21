@@ -1,0 +1,162 @@
+name: Portfolio QA CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout tested QA revision
+        id: checkout_qa
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: portfolio-qa
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout pinned portfolio application
+        id: checkout_app
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hambaliFadib/portofolio-web
+          ref: 5915098e2aa507a451f58e70547abded3023f8d9
+          path: portfolio-app
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify checked-out revisions
+        id: revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          qa_sha="$(git -C "$GITHUB_WORKSPACE/portfolio-qa" rev-parse HEAD)"
+          if [[ "$qa_sha" != "$GITHUB_SHA" ]]; then
+            echo "QA checkout mismatch: tested $GITHUB_SHA but checked out $qa_sha" >&2
+            exit 1
+          fi
+          app_sha="$(git -C "$GITHUB_WORKSPACE/portfolio-app" rev-parse HEAD)"
+          expected_app_sha="5915098e2aa507a451f58e70547abded3023f8d9"
+          if [[ "$app_sha" != "$expected_app_sha" ]]; then
+            echo "Application checkout mismatch: expected $expected_app_sha but found $app_sha" >&2
+            exit 1
+          fi
+          echo "QA tested revision: $qa_sha"
+          echo "Portfolio application revision: $app_sha"
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            portfolio-qa/package-lock.json
+            portfolio-app/package-lock.json
+
+      - name: Install locked QA dependencies
+        working-directory: portfolio-qa
+        run: npm ci
+
+      - name: Install locked application dependencies
+        working-directory: portfolio-app
+        run: npm ci
+
+      - name: Initialize separate checkout path
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "PORTFOLIO_APP_ROOT=$GITHUB_WORKSPACE/portfolio-app" >> "$GITHUB_ENV"
+
+      - name: Record source and runtime provenance
+        id: provenance
+        working-directory: portfolio-qa
+        run: node scripts/record-provenance.js
+
+      - name: Framework policy self-test
+        id: policy_selftest
+        working-directory: portfolio-qa
+        run: npm run policy:selftest
+
+      - name: Framework AI triage boundary self-test
+        id: triage_selftest
+        working-directory: portfolio-qa
+        run: npm run triage:selftest
+
+      - name: Framework bounded AI contract checks
+        id: ai_contract
+        working-directory: portfolio-qa
+        run: npm run contract:ai
+
+      - name: Build the pinned production application
+        id: app_build
+        working-directory: portfolio-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/portfolio-qa/artifacts"
+          npm run build 2>&1 | tee "$GITHUB_WORKSPACE/portfolio-qa/artifacts/portfolio-build.log"
+
+      - name: Install Playwright Chromium and Linux dependencies
+        id: chromium
+        working-directory: portfolio-qa
+        run: npx playwright install --with-deps chromium
+
+      - name: Run locked validation against the owned production server
+        id: validate
+        working-directory: portfolio-qa
+        run: node scripts/with-app-server.js
+
+      - name: Write GitHub job summary
+        if: always()
+        env:
+          QA_TESTED_SHA: ${{ github.sha }}
+          QA_EVENT: ${{ github.event_name }}
+          APP_SHA: 5915098e2aa507a451f58e70547abded3023f8d9
+          FRAMEWORK_SHA: b5b46cc60b834ffe5ae0fcfc38d8d87921bd490d
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+          BUILD_OUTCOME: ${{ steps.app_build.outcome }}
+          POLICY_SELFTEST_OUTCOME: ${{ steps.policy_selftest.outcome }}
+          TRIAGE_SELFTEST_OUTCOME: ${{ steps.triage_selftest.outcome }}
+          AI_CONTRACT_OUTCOME: ${{ steps.ai_contract.outcome }}
+        shell: bash
+        run: |
+          {
+            echo "# Portfolio QA CI"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+            printf "| QA tested SHA | %s |\n" "$QA_TESTED_SHA"
+            printf "| Event | %s |\n" "$QA_EVENT"
+            printf "| Application SHA | %s |\n" "$APP_SHA"
+            printf "| Framework SHA | %s |\n" "$FRAMEWORK_SHA"
+            printf "| Application production build | %s |\n" "$BUILD_OUTCOME"
+            printf "| Policy self-test | %s |\n" "$POLICY_SELFTEST_OUTCOME"
+            printf "| AI triage self-test | %s |\n" "$TRIAGE_SELFTEST_OUTCOME"
+            printf "| AI contract checks | %s |\n" "$AI_CONTRACT_OUTCOME"
+            printf "| Lint, policy, secret scan, unit, HTTP smoke, and UI/E2E | %s |\n" "$VALIDATE_OUTCOME"
+            echo
+            echo "Full revision/runtime data is in artifacts/provenance.json. Reports and server/build logs are uploaded as workflow artifacts."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload reports and failure evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portfolio-qa-evidence
+          path: |
+            portfolio-qa/artifacts/
+            portfolio-qa/playwright-report/
+            portfolio-qa/test-results/
+          if-no-files-found: warn
+          retention-days: 14

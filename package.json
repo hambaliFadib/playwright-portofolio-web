@@ -1,0 +1,39 @@
+{
+  "name": "portfolio-playwright-qa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portfolio project using the Playwright Quality Framework with deterministic policy gates.",
+  "scripts": {
+    "lint": "node scripts/run-eslint.js",
+    "policy:check": "node scripts/policy-check.js",
+    "contract:ai": "node scripts/ai-contract-check.js",
+    "secret:check": "node scripts/secret-check.js",
+    "record": "playwright codegen",
+    "test:e2e": "node --env-file-if-exists=.env scripts/run-e2e.js",
+    "test:api": "node --env-file-if-exists=.env scripts/run-playwright-project.js api",
+    "test:unit": "node --env-file-if-exists=.env scripts/run-playwright-project.js unit",
+    "test:all": "node --env-file-if-exists=.env scripts/run-playwright-project.js all",
+    "test:ui": "node --env-file-if-exists=.env ./node_modules/@playwright/test/cli.js test --ui",
+    "test:headed": "node --env-file-if-exists=.env ./node_modules/@playwright/test/cli.js test --headed --workers=1",
+    "test:debug": "node --env-file-if-exists=.env ./node_modules/@playwright/test/cli.js test --debug",
+    "report": "playwright show-report",
+    "triage": "node --env-file-if-exists=.env.ai scripts/ai-triage.js",
+    "policy:selftest": "node scripts/policy-selftest.js",
+    "triage:selftest": "node --env-file-if-exists=.env.ai scripts/ai-triage.js --selftest",
+    "provenance": "node --env-file-if-exists=.env scripts/record-provenance.js",
+    "validate:with-app": "node --env-file-if-exists=.env scripts/with-app-server.js",
+    "validate": "npm run lint && npm run policy:check && npm run secret:check && npm run test:all"
+  },
+  "keywords": ["playwright", "portfolio", "qa"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@playwright/test": "^1.62.1",
+    "eslint": "^9.34.0",
+    "eslint-plugin-playwright": "^2.2.2"
+  }
+}
