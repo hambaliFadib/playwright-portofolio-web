@@ -69,7 +69,9 @@ jobs:
       - name: Install locked QA dependencies
         id: qa_deps
         working-directory: portfolio-qa
-        run: npm ci
+        run: |
+          echo 'P4-A3 CANARY: deliberately fail before Playwright (expected)' >&2
+          exit 42
 
       - name: Install locked application dependencies
         id: app_deps
