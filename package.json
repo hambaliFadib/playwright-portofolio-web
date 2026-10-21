@@ -22,6 +22,9 @@
     "triage:selftest": "node --env-file-if-exists=.env.ai scripts/ai-triage.js --selftest",
     "provenance": "node --env-file-if-exists=.env scripts/record-provenance.js",
     "validate:with-app": "node --env-file-if-exists=.env scripts/with-app-server.js",
+    "evidence:selftest": "node scripts/evidence-manifest-selftest.js",
+    "evidence:write": "node scripts/evidence-manifest.js write",
+    "evidence:verify": "node scripts/evidence-manifest.js verify",
     "quality-gate:selftest": "node scripts/quality-gate-selftest.js",
     "quality-gate:verify-report": "node scripts/verify-test-report.js",
     "validate": "npm run lint && npm run policy:check && npm run secret:check && npm run test:all"
