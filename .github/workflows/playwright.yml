@@ -77,6 +77,7 @@ jobs:
         run: npm ci
 
       - name: Initialize separate checkout path
+        id: checkout_paths
         shell: bash
         run: |
           set -euo pipefail
@@ -142,21 +143,24 @@ jobs:
       - name: Capture early-failure stages independent of Node dependencies
         if: always()
         env:
-          STAGE_CALLER: ${{ steps.caller.outcome }}
+          STAGE_CALLER: not-applicable
           STAGE_CHECKOUT_QA: ${{ steps.checkout_qa.outcome }}
           STAGE_CHECKOUT_APP: ${{ steps.checkout_app.outcome }}
           STAGE_REVISIONS: ${{ steps.revisions.outcome }}
           STAGE_NODE_SETUP: ${{ steps.node_setup.outcome }}
           STAGE_QA_DEPS: ${{ steps.qa_deps.outcome }}
+          STAGE_CHECKOUT_PATHS: ${{ steps.checkout_paths.outcome }}
+          STAGE_INITIAL_PROVENANCE: ${{ steps.provenance.outcome }}
+          STAGE_FINAL_PROVENANCE: ${{ steps.final_provenance.outcome }}
           STAGE_APP_DEPS: ${{ steps.app_deps.outcome }}
-          STAGE_GATE_SELFTEST: ${{ steps.gate_selftest.outcome }}
+          STAGE_GATE_SELFTEST: not-applicable
           STAGE_POLICY_SELFTEST: ${{ steps.policy_selftest.outcome }}
           STAGE_TRIAGE_SELFTEST: ${{ steps.triage_selftest.outcome }}
           STAGE_AI_CONTRACT: ${{ steps.ai_contract.outcome }}
           STAGE_APP_BUILD: ${{ steps.app_build.outcome }}
           STAGE_CHROMIUM: ${{ steps.chromium.outcome }}
           STAGE_VALIDATE: ${{ steps.validate.outcome }}
-          STAGE_REPORT_GATE: ${{ steps.report_gate.outcome }}
+          STAGE_REPORT_GATE: not-applicable
           STAGE_PROVENANCE: ${{ steps.provenance.outcome }}
           STAGE_EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
           STAGE_EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
@@ -216,13 +220,21 @@ jobs:
             echo
             echo "Full revision/runtime data is in artifacts/provenance.json. Reports and server/build logs are uploaded as workflow artifacts."
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload early-failure evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portfolio-qa-early-evidence
+          path: ${{ runner.temp }}/portfolio-qa-early-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload reports and failure evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: portfolio-qa-evidence
           path: |
-            ${{ runner.temp }}/portfolio-qa-early-evidence/
             portfolio-qa/artifacts/
             portfolio-qa/playwright-report/
             portfolio-qa/test-results/
