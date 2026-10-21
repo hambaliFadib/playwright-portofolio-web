@@ -11,7 +11,7 @@ The P4-A2 manifest depends on the checked-out QA repository and Node.js. On fail
 - Selects the first observed failure/cancellation; if there is no failure, marks an unknown/skipped stage rather than fabricating success.
 - The resulting record is **advisory** and cannot override the strict seven-test gate, GitHub check conclusion, P4-A2 provenance or manifest.
 - If the QA checkout is missing, an embedded Python fallback creates an explicitly `incomplete` JSON artifact without importing source code from that checkout. This covers missing checkout, Node.js or npm dependencies, assuming the hosted runner can still run Python.
-- Both workflows upload runner-temp evidence with `if: always()`, alongside any available Playwright/QA artifacts.
+- Both workflows upload runner-temp evidence as a **separate** `portfolio-qa-early-evidence*` artifact with `if: always()`, preserving the existing Playwright evidence ZIP paths and P4-A2 SHA-256 inventory. Standalone-only absent stages are explicitly `not-applicable`, not `unknown`.
 - `scripts/early-failure-evidence.py selftest` exercises success, failed checkout, failed dependency, failed build, report failure, skipped/unknown stage and malformed contextual identifiers.
 
 ## Limitations
