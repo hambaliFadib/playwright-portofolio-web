@@ -57,6 +57,7 @@ jobs:
           echo "Portfolio application revision: $app_sha"
 
       - name: Set up Node.js 22
+        id: node_setup
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -66,10 +67,12 @@ jobs:
             portfolio-app/package-lock.json
 
       - name: Install locked QA dependencies
+        id: qa_deps
         working-directory: portfolio-qa
         run: npm ci
 
       - name: Install locked application dependencies
+        id: app_deps
         working-directory: portfolio-app
         run: npm ci
 
@@ -125,14 +128,60 @@ jobs:
         run: node scripts/record-provenance.js --final
 
       - name: Validate evidence manifest contracts
+        id: evidence_selftest
         if: always()
         working-directory: portfolio-qa
         run: npm run evidence:selftest
 
       - name: Record and verify evidence manifest
+        id: evidence_manifest
         if: always()
         working-directory: portfolio-qa
         run: npm run evidence:write && npm run evidence:verify
+
+      - name: Capture early-failure stages independent of Node dependencies
+        if: always()
+        env:
+          STAGE_CALLER: ${{ steps.caller.outcome }}
+          STAGE_CHECKOUT_QA: ${{ steps.checkout_qa.outcome }}
+          STAGE_CHECKOUT_APP: ${{ steps.checkout_app.outcome }}
+          STAGE_REVISIONS: ${{ steps.revisions.outcome }}
+          STAGE_NODE_SETUP: ${{ steps.node_setup.outcome }}
+          STAGE_QA_DEPS: ${{ steps.qa_deps.outcome }}
+          STAGE_APP_DEPS: ${{ steps.app_deps.outcome }}
+          STAGE_GATE_SELFTEST: ${{ steps.gate_selftest.outcome }}
+          STAGE_POLICY_SELFTEST: ${{ steps.policy_selftest.outcome }}
+          STAGE_TRIAGE_SELFTEST: ${{ steps.triage_selftest.outcome }}
+          STAGE_AI_CONTRACT: ${{ steps.ai_contract.outcome }}
+          STAGE_APP_BUILD: ${{ steps.app_build.outcome }}
+          STAGE_CHROMIUM: ${{ steps.chromium.outcome }}
+          STAGE_VALIDATE: ${{ steps.validate.outcome }}
+          STAGE_REPORT_GATE: ${{ steps.report_gate.outcome }}
+          STAGE_PROVENANCE: ${{ steps.provenance.outcome }}
+          STAGE_EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
+          STAGE_EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
+          QA_SOURCE_PIN: ${{ github.sha }}
+          APP_TEST_PIN: 5915098e2aa507a451f58e70547abded3023f8d9
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/portfolio-qa-early-evidence"
+          if [[ -f "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.py" ]]; then
+            python3 "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.py" selftest
+            python3 "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.py" write
+          else
+            python3 - <<'PY'
+          import json, os, pathlib
+          d = pathlib.Path(os.environ['RUNNER_TEMP']) / 'portfolio-qa-early-evidence'
+          d.mkdir(parents=True, exist_ok=True)
+          stages = {k.removeprefix('STAGE_').lower(): v for k, v in os.environ.items() if k.startswith('STAGE_')}
+          data = {'schemaVersion': 1, 'kind': 'portfolio-qa-early-failure',
+                  'evidenceStatus': 'incomplete', 'reason': 'QA checkout unavailable',
+                  'context': {'runId': os.environ.get('GITHUB_RUN_ID'), 'runAttempt': os.environ.get('GITHUB_RUN_ATTEMPT')},
+                  'stages': stages, 'note': 'Advisory only; never changes CI verdict'}
+          (d / 'early-failure.json').write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+          PY
+          fi
 
       - name: Write GitHub job summary
         if: always()
@@ -173,6 +222,7 @@ jobs:
         with:
           name: portfolio-qa-evidence
           path: |
+            ${{ runner.temp }}/portfolio-qa-early-evidence/
             portfolio-qa/artifacts/
             portfolio-qa/playwright-report/
             portfolio-qa/test-results/
