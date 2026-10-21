@@ -140,7 +140,7 @@ jobs:
         working-directory: portfolio-qa
         run: npm run evidence:write && npm run evidence:verify
 
-      - name: Capture early-failure stages independent of Node dependencies
+      - name: Capture early-failure stages using CommonJS
         if: always()
         env:
           STAGE_CALLER: not-applicable
@@ -161,7 +161,6 @@ jobs:
           STAGE_CHROMIUM: ${{ steps.chromium.outcome }}
           STAGE_VALIDATE: ${{ steps.validate.outcome }}
           STAGE_REPORT_GATE: not-applicable
-          STAGE_PROVENANCE: ${{ steps.provenance.outcome }}
           STAGE_EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
           STAGE_EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
           QA_SOURCE_PIN: ${{ github.sha }}
@@ -170,21 +169,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/portfolio-qa-early-evidence"
-          if [[ -f "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.py" ]]; then
-            python3 "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.py" write
-            python3 "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.py" selftest
+          if [[ -f "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" ]]; then
+            node "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" write
+            node "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" selftest
           else
-            python3 - <<'PY'
-          import json, os, pathlib
-          d = pathlib.Path(os.environ['RUNNER_TEMP']) / 'portfolio-qa-early-evidence'
-          d.mkdir(parents=True, exist_ok=True)
-          stages = {k.removeprefix('STAGE_').lower(): v for k, v in os.environ.items() if k.startswith('STAGE_')}
-          data = {'schemaVersion': 1, 'kind': 'portfolio-qa-early-failure',
-                  'evidenceStatus': 'incomplete', 'reason': 'QA checkout unavailable',
-                  'context': {'runId': os.environ.get('GITHUB_RUN_ID'), 'runAttempt': os.environ.get('GITHUB_RUN_ATTEMPT')},
-                  'stages': stages, 'note': 'Advisory only; never changes CI verdict'}
-          (d / 'early-failure.json').write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-          PY
+            node -e 'const fs=require("node:fs"),path=require("node:path");const d=path.join(process.env.RUNNER_TEMP,"portfolio-qa-early-evidence");fs.mkdirSync(d,{recursive:true});fs.writeFileSync(path.join(d,"early-failure.json"),JSON.stringify({schemaVersion:1,kind:"portfolio-qa-early-failure",evidenceStatus:"incomplete",reason:"QA checkout unavailable",context:{runId:process.env.GITHUB_RUN_ID||null,runAttempt:process.env.GITHUB_RUN_ATTEMPT||null},note:"Advisory only; never changes CI verdict"},null,2)+"\\n")'
           fi
 
       - name: Write GitHub job summary
