@@ -2,7 +2,7 @@ const { spawn, spawnSync, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
-const project = require('../project.config');
+const { resolveExpectedApplicationSha } = require('./verify-revisions');
 
 const qaRoot = path.resolve(__dirname, '..');
 
@@ -87,8 +87,9 @@ async function main() {
   }
 
   const appSha = git(resolvedAppRoot, ['rev-parse', 'HEAD']);
-  if (appSha !== project.application.sha) {
-    throw new Error('Application SHA mismatch. Expected ' + project.application.sha + '; found ' + appSha);
+  const expectedAppSha = resolveExpectedApplicationSha();
+  if (appSha !== expectedAppSha) {
+    throw new Error('Application SHA mismatch. Expected ' + expectedAppSha + '; found ' + appSha);
   }
   const buildIdPath = path.join(resolvedAppRoot, '.next', 'BUILD_ID');
   if (!fs.existsSync(buildIdPath)) {

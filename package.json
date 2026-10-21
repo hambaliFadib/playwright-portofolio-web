@@ -22,6 +22,8 @@
     "triage:selftest": "node --env-file-if-exists=.env.ai scripts/ai-triage.js --selftest",
     "provenance": "node --env-file-if-exists=.env scripts/record-provenance.js",
     "validate:with-app": "node --env-file-if-exists=.env scripts/with-app-server.js",
+    "quality-gate:selftest": "node scripts/quality-gate-selftest.js",
+    "quality-gate:verify-report": "node scripts/verify-test-report.js",
     "validate": "npm run lint && npm run policy:check && npm run secret:check && npm run test:all"
   },
   "keywords": ["playwright", "portfolio", "qa"],
