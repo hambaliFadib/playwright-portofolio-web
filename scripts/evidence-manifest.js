@@ -81,7 +81,7 @@ function inventory(root) {
   return entries.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 }
 
-function readProvenance(root) {
+function readProvenance(root, context) {
   const filename = path.join(root, 'artifacts', 'provenance.json');
   if (!fs.existsSync(filename)) return { status: 'missing', value: null };
   try {
@@ -90,6 +90,14 @@ function readProvenance(root) {
         !SHA40.test(value.qa?.implementationSha || '') ||
         !SHA40.test(value.application?.testedSha || '') ||
         !SHA40.test(value.framework?.adoptedSha || '')) return { status: 'invalid', value: null };
+    const trigger = value.trigger;
+    if (!trigger || typeof trigger !== 'object' ||
+        trigger.runId !== (context.runId ?? null) ||
+        trigger.runAttempt !== (context.runAttempt ?? null) ||
+        trigger.event !== (context.event ?? null) ||
+        trigger.callerEventSha !== (context.eventSha ?? null)) {
+      return { status: 'context-mismatch', value: null };
+    }
     return { status: value.phase, value };
   } catch {
     return { status: 'invalid', value: null };
@@ -120,7 +128,7 @@ function defaultContext() {
 
 function buildManifest(root, context = defaultContext()) {
   const resolved = path.resolve(root);
-  const provenance = readProvenance(resolved);
+  const provenance = readProvenance(resolved, context);
   const test = readTestEvidence(resolved);
   const source = provenance.value;
   const files = inventory(resolved);
