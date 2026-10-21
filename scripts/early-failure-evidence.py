@@ -9,12 +9,12 @@ from datetime import datetime, timezone
 
 STAGES = (
     "caller", "checkout_qa", "checkout_app", "revisions", "node_setup",
-    "qa_deps", "app_deps", "gate_selftest", "policy_selftest",
-    "triage_selftest", "ai_contract", "app_build", "chromium",
-    "validate", "report_gate", "provenance", "evidence_selftest",
-    "evidence_manifest",
+    "qa_deps", "app_deps", "checkout_paths", "initial_provenance",
+    "gate_selftest", "policy_selftest", "triage_selftest", "ai_contract",
+    "app_build", "chromium", "validate", "report_gate", "final_provenance",
+    "evidence_selftest", "evidence_manifest",
 )
-STATES = {"success", "failure", "cancelled", "skipped"}
+STATES = {"success", "failure", "cancelled", "skipped", "not-applicable"}
 SHA = re.compile(r"^[a-fA-F0-9]{40}$")
 RUN = re.compile(r"^[0-9]+$")
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
@@ -43,7 +43,7 @@ def build(env):
         unverified = [(name, value) for name, value in outcomes.items()
                       if value in ("skipped", "unknown")]
         failure = unverified[0] if unverified else None
-    status = "incomplete" if failure or any(x != "success" for x in outcomes.values()) else "steps-successful"
+    status = "incomplete" if failure or any(x not in ("success", "not-applicable") for x in outcomes.values()) else "steps-successful"
     return {
         "schemaVersion": 1,
         "kind": "portfolio-qa-early-failure",
@@ -73,6 +73,11 @@ def main():
             env["STAGE_" + stage.upper()] = "success"
         healthy = build(env)
         assert healthy["evidenceStatus"] == "steps-successful"
+        not_applicable = dict(env)
+        for optional in ("caller", "gate_selftest", "report_gate", "initial_provenance"):
+            not_applicable["STAGE_" + optional.upper()] = "not-applicable"
+        assert build(not_applicable)["evidenceStatus"] == "steps-successful"
+        assert build(not_applicable)["firstNonSuccessStage"] is None
         for failed_stage in ("caller", "checkout_qa", "qa_deps", "app_build", "validate", "report_gate"):
             modified = dict(env)
             modified["STAGE_" + failed_stage.upper()] = "failure"
