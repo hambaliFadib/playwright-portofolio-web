@@ -173,7 +173,7 @@ jobs:
             node "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" write
             node "$GITHUB_WORKSPACE/portfolio-qa/scripts/early-failure-evidence.js" selftest
           else
-            node -e 'const fs=require("node:fs"),path=require("node:path");const d=path.join(process.env.RUNNER_TEMP,"portfolio-qa-early-evidence");fs.mkdirSync(d,{recursive:true});fs.writeFileSync(path.join(d,"early-failure.json"),JSON.stringify({schemaVersion:1,kind:"portfolio-qa-early-failure",evidenceStatus:"incomplete",reason:"QA checkout unavailable",context:{runId:process.env.GITHUB_RUN_ID||null,runAttempt:process.env.GITHUB_RUN_ATTEMPT||null},note:"Advisory only; never changes CI verdict"},null,2)+"\\n")'
+            node -e 'const fs=require("node:fs"),path=require("node:path");const d=path.join(process.env.RUNNER_TEMP,"portfolio-qa-early-evidence");fs.mkdirSync(d,{recursive:true});fs.writeFileSync(path.join(d,"early-failure.json"),JSON.stringify({schemaVersion:1,kind:"portfolio-qa-early-failure",evidenceStatus:"incomplete",reason:"QA checkout unavailable",context:{runId:process.env.GITHUB_RUN_ID||null,runAttempt:process.env.GITHUB_RUN_ATTEMPT||null},note:"Advisory only; never changes CI verdict"},null,2)+"\n")'
           fi
 
       - name: Write GitHub job summary
