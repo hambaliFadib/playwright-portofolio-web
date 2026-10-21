@@ -118,6 +118,12 @@ jobs:
         working-directory: portfolio-qa
         run: node scripts/with-app-server.js
 
+      - name: Record final standalone provenance
+        id: final_provenance
+        if: always()
+        working-directory: portfolio-qa
+        run: node scripts/record-provenance.js --final
+
       - name: Validate evidence manifest contracts
         if: always()
         working-directory: portfolio-qa
@@ -140,6 +146,7 @@ jobs:
           POLICY_SELFTEST_OUTCOME: ${{ steps.policy_selftest.outcome }}
           TRIAGE_SELFTEST_OUTCOME: ${{ steps.triage_selftest.outcome }}
           AI_CONTRACT_OUTCOME: ${{ steps.ai_contract.outcome }}
+          FINAL_PROVENANCE_OUTCOME: ${{ steps.final_provenance.outcome }}
         shell: bash
         run: |
           {
@@ -155,6 +162,7 @@ jobs:
             printf "| Policy self-test | %s |\n" "$POLICY_SELFTEST_OUTCOME"
             printf "| AI triage self-test | %s |\n" "$TRIAGE_SELFTEST_OUTCOME"
             printf "| AI contract checks | %s |\n" "$AI_CONTRACT_OUTCOME"
+            printf "| Final provenance | %s |\n" "$FINAL_PROVENANCE_OUTCOME"
             printf "| Lint, policy, secret scan, unit, HTTP smoke, and UI/E2E | %s |\n" "$VALIDATE_OUTCOME"
             echo
             echo "Full revision/runtime data is in artifacts/provenance.json. Reports and server/build logs are uploaded as workflow artifacts."
