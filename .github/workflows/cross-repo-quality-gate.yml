@@ -156,6 +156,18 @@ jobs:
         working-directory: portfolio-qa
         run: node scripts/record-provenance.js --final
 
+      - name: Validate evidence manifest contracts
+        id: evidence_selftest
+        if: always()
+        working-directory: portfolio-qa
+        run: npm run evidence:selftest
+
+      - name: Record and verify evidence manifest
+        id: evidence_manifest
+        if: always()
+        working-directory: portfolio-qa
+        run: npm run evidence:write && npm run evidence:verify
+
       - name: Write GitHub job summary
         if: always()
         env:
@@ -169,6 +181,8 @@ jobs:
           VALIDATION: ${{ steps.validate.outcome }}
           REPORT: ${{ steps.report_gate.outcome }}
           PROVENANCE: ${{ steps.provenance.outcome }}
+          EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
+          EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
           APP_HEAD: ${{ inputs.application_pr_head_sha }}
           APP_TEST: ${{ inputs.application_test_sha }}
           QA_SOURCE: ${{ inputs.qa_source_sha }}
@@ -194,6 +208,8 @@ jobs:
             printf "| Lint, policy, secret scan and 7 Playwright tests | %s |\n" "$VALIDATION"
             printf "| Strict test report gate | %s |\n" "$REPORT"
             printf "| Final provenance | %s |\n" "$PROVENANCE"
+            printf "| Evidence contract self-test | %s |\n" "$EVIDENCE_SELFTEST"
+            printf "| Evidence manifest integrity | %s |\n" "$EVIDENCE_MANIFEST"
             echo
             echo "This shadow-mode check does not enable branch protection."
           } >> "$GITHUB_STEP_SUMMARY"
