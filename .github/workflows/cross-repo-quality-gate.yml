@@ -79,6 +79,7 @@ jobs:
           persist-credentials: false
 
       - name: Set isolated checkout and report paths
+        id: checkout_paths
         shell: bash
         run: |
           set -euo pipefail
@@ -183,6 +184,9 @@ jobs:
           STAGE_REVISIONS: ${{ steps.revisions.outcome }}
           STAGE_NODE_SETUP: ${{ steps.node_setup.outcome }}
           STAGE_QA_DEPS: ${{ steps.qa_deps.outcome }}
+          STAGE_CHECKOUT_PATHS: ${{ steps.checkout_paths.outcome }}
+          STAGE_INITIAL_PROVENANCE: not-applicable
+          STAGE_FINAL_PROVENANCE: ${{ steps.provenance.outcome }}
           STAGE_APP_DEPS: ${{ steps.app_deps.outcome }}
           STAGE_GATE_SELFTEST: ${{ steps.gate_selftest.outcome }}
           STAGE_POLICY_SELFTEST: ${{ steps.policy_selftest.outcome }}
@@ -264,13 +268,21 @@ jobs:
             echo "This shadow-mode check does not enable branch protection."
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Upload early-failure evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portfolio-qa-early-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/portfolio-qa-early-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload reports, provenance and failure evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: portfolio-qa-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/portfolio-qa-early-evidence/
             portfolio-qa/artifacts/
             portfolio-qa/playwright-report/
             portfolio-qa/test-results/
