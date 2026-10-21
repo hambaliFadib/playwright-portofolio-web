@@ -118,6 +118,16 @@ jobs:
         working-directory: portfolio-qa
         run: node scripts/with-app-server.js
 
+      - name: Validate evidence manifest contracts
+        if: always()
+        working-directory: portfolio-qa
+        run: npm run evidence:selftest
+
+      - name: Record and verify evidence manifest
+        if: always()
+        working-directory: portfolio-qa
+        run: npm run evidence:write && npm run evidence:verify
+
       - name: Write GitHub job summary
         if: always()
         env:
