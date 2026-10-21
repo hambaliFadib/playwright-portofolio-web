@@ -10,7 +10,7 @@ This feature adds a non-authoritative, allowlisted, versioned SHA-256 evidence i
 
 ## Contract
 
-The manifest records GitHub run ID, attempt, event, event SHA, QA implementation SHA, application tested SHA, framework adopted SHA and available report verdict. Each included artifact has a relative path, byte size and SHA-256. File paths are restricted to generated evidence under `artifacts/`, `playwright-report/` and `test-results/`, with explicit allowlisted top-level artifact names, safe evidence extensions elsewhere, no symlinks, no special hidden paths and no sensitive-name paths. No `.env`, tokens, passwords, credentials or browser storage state are intended for inclusion.
+The manifest cross-checks provenance trigger run ID, attempt, event and event SHA against the active CI context; stale or mismatched provenance is excluded from trusted revisions and marked `context-mismatch`. It records GitHub run ID, attempt, event, event SHA, QA implementation SHA, application tested SHA, framework adopted SHA and available report verdict. Each included artifact has a relative path, byte size and SHA-256. File paths are restricted to generated evidence under `artifacts/`, `playwright-report/` and `test-results/`, with explicit allowlisted top-level artifact names, safe evidence extensions elsewhere, no symlinks, no special hidden paths and no sensitive-name paths. No `.env`, tokens, passwords, credentials or browser storage state are intended for inclusion.
 
 **Inventory is not an independent attestation:** build and verification operate in the same runner and cannot prove artifacts have not been mutated after upload or override GitHub's own ZIP digest. The manifest excludes itself. JSON report semantic verification reuses the existing strict 7/7 verifier; missing or invalid reports cause `evidenceStatus: incomplete`, never a fabricated PASS.
 
@@ -21,7 +21,7 @@ Both QA workflows run evidence self-tests and best-effort evidence write+verific
 ## Limitations / follow-up
 
 - Repo-side upload success does not replace independently downloading and validating a published artifact before an audit decision.
-- Standalone QA workflow currently records initial provenance; when a validated report exists, the manifest can mark `evidenceStatus: incomplete` because provenance was never finalized. Final-provenance parity is a separate reviewable enhancement.
+- Standalone QA CI now records final provenance before generating the manifest. Evidence is marked complete only if final provenance matches the current CI trigger context and the strict seven-test report is verified; otherwise its status remains incomplete.
 - CI must be inspected on GitHub-hosted Linux for path allowlist coverage before considering this PR ready.
 - Artifacts currently expire after 14 days; this PR does not alter retention policy.
 - A future approved app caller pin update is needed before app PRs run the QA version introduced by this feature.
