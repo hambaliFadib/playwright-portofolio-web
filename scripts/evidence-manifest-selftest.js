@@ -52,6 +52,28 @@ try {
   file('artifacts/all-results.json', '{ broken');
   assert.equal(buildManifest(root, context).report.status, 'invalid');
   fs.rmSync(path.join(root, 'artifacts/all-results.json'));
+  const provenance = {
+    phase: 'final',
+    trigger: { runId: context.runId, runAttempt: context.runAttempt,
+      event: context.event, callerEventSha: context.eventSha },
+    qa: { implementationSha: 'a'.repeat(40) },
+    application: { testedSha: 'b'.repeat(40) },
+    framework: { adoptedSha: 'c'.repeat(40) },
+  };
+  file('artifacts/provenance.json', JSON.stringify(provenance));
+  assert.equal(buildManifest(root, context).provenanceStatus, 'final');
+  for (const key of ['runId', 'runAttempt', 'eventSha', 'event']) {
+    const mismatched = { ...context, [key]: key === 'event' ? 'push' : 'different' };
+    const result = buildManifest(root, mismatched);
+    assert.equal(result.provenanceStatus, 'context-mismatch', 'reject stale ' + key);
+    assert.equal(result.evidenceStatus, 'incomplete', 'stale run must not be complete');
+    assert.equal(result.revisions.qa, null, 'untrusted SHA must not be copied');
+  }
+  const newManifest = writeManifest(root, context);
+  mustFail('stale provenance cannot verify under a new run',
+    () => verifyManifest(root, newManifest, { ...context, runId: '456' }));
+  assert.equal(newManifest.provenanceStatus, 'final');
+  fs.rmSync(path.join(root, 'artifacts/provenance.json'));
   const secret = file('artifacts/secret.txt', 'x');
   mustFail('unapproved sensitive file', () => buildManifest(root, context));
   fs.rmSync(secret);
