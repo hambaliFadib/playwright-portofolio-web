@@ -163,6 +163,21 @@ jobs:
         working-directory: portfolio-qa
         run: node scripts/record-provenance.js --final
 
+      - name: Validate reporting consistency contracts
+        id: reporting_selftest
+        if: always()
+        working-directory: portfolio-qa
+        run: npm run reporting:selftest
+
+      - name: Record advisory reporting index
+        id: reporting_index
+        if: always()
+        working-directory: portfolio-qa
+        env:
+          STEP_VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+          STEP_REPORT_GATE_OUTCOME: ${{ steps.report_gate.outcome }}
+        run: npm run reporting:write
+
       - name: Validate evidence manifest contracts
         id: evidence_selftest
         if: always()
