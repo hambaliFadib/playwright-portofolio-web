@@ -23,6 +23,8 @@
     "provenance": "node --env-file-if-exists=.env scripts/record-provenance.js",
     "validate:with-app": "node --env-file-if-exists=.env scripts/with-app-server.js",
     "evidence:selftest": "node scripts/evidence-manifest-selftest.js",
+    "reporting:selftest": "node scripts/reporting-index-selftest.js",
+    "reporting:write": "node scripts/reporting-index.js write",
     "evidence:write": "node scripts/evidence-manifest.js write",
     "evidence:verify": "node scripts/evidence-manifest.js verify",
     "quality-gate:selftest": "node scripts/quality-gate-selftest.js",

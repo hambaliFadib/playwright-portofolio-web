@@ -10,7 +10,7 @@ function findFailedResultInSuite(suite) {
   for (const spec of suite.specs || []) {
     for (const test of spec.tests || []) {
       for (const result of test.results || []) {
-        if (result.status === 'failed') return { spec, test, result };
+        if (['failed', 'timedOut', 'interrupted'].includes(result.status)) return { spec, test, result };
       }
     }
   }
@@ -53,10 +53,24 @@ function loadEvidence() {
       retry: 0,
     };
   }
-  const file = process.argv[2] || 'artifacts/playwright-results.json';
-  if (!fs.existsSync(file)) return { testName: 'unknown', playwrightStatus: 'unknown', retry: 0 };
-  const report = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return evidenceFromReport(report);
+  return readEvidence(resolveReportPath());
+}
+
+function resolveReportPath(argv = process.argv, env = process.env) {
+  return argv[2] && argv[2] !== '--selftest'
+    ? argv[2]
+    : env.PORTFOLIO_TEST_REPORT || 'artifacts/all-results.json';
+}
+
+function readEvidence(file) {
+  const unavailable = { testName: 'unknown', playwrightStatus: 'unknown', retry: 0 };
+  if (!fs.existsSync(file)) return unavailable;
+  try {
+    return evidenceFromReport(JSON.parse(fs.readFileSync(file, 'utf8')));
+  } catch {
+    // Malformed or unavailable reports can never be treated as AI-confirmed failures.
+    return unavailable;
+  }
 }
 
 async function main() {
@@ -69,4 +83,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { evidenceFromReport, findFailedResult, stripAnsi };
+module.exports = { evidenceFromReport, findFailedResult, stripAnsi, resolveReportPath, readEvidence };

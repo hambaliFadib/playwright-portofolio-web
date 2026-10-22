@@ -10,7 +10,7 @@ const ROOTS = Object.freeze(['artifacts', 'playwright-report', 'test-results']);
 const ARTIFACT_NAMES = new Set([
   'all-results.json', 'api-results.json', 'unit-results.json',
   'e2e-results.json', 'playwright-results.json', 'provenance.json',
-  'portfolio-build.log', 'portfolio-app-server.log',
+  'portfolio-build.log', 'portfolio-app-server.log', 'reporting-index.json',
 ]);
 const EVIDENCE_EXTENSIONS = new Set([
   '.html', '.json', '.jsonl', '.zip', '.png', '.jpg', '.jpeg',
