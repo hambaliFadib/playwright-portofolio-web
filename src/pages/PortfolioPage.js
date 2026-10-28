@@ -1,15 +1,21 @@
 const HERO_HEADLINE = 'Clarity before speed. Quality before release.';
+const FULLSTACK_HEADLINE = 'Thoughtful software. Built with intent.';
 
 class PortfolioPage {
   constructor(page) {
     this.page = page;
     this.heroHeading = page.getByRole('heading', { name: HERO_HEADLINE });
+    this.fullStackHeroHeading = page.getByRole('heading', { name: FULLSTACK_HEADLINE });
+    this.fullStackRole = page.getByText('FULL STACK ENGINEER', { exact: true });
     this.primaryNavigation = page.getByRole('navigation', { name: 'Primary' });
-    this.homeLink = page.getByRole('link', { name: 'Hambali Fadib — back to top' });
+    this.homeLink = page.getByRole('link', { name: 'Home', exact: true });
+    this.projectsSection = page.locator('#projects');
+    this.wordmark = page.getByRole('button', { name: /^Switch to (Full Stack Engineer|QA Engineer)$/ });
+    this.identitySurface = page.locator('#portfolio-identity');
     this.themeToggle = page.getByRole('button', { name: /Switch to (light|dark) mode/ });
   }
 
-  async goto({ initialTheme } = {}) {
+  async goto({ initialTheme, persona, theme } = {}) {
     if (initialTheme) {
       if (!['dark', 'light'].includes(initialTheme)) {
         throw new Error('initialTheme must be dark or light.');
@@ -20,7 +26,10 @@ class PortfolioPage {
         }
       }, initialTheme);
     }
-    await this.page.goto('/');
+    const query = [];
+    if (persona) query.push(`persona=${encodeURIComponent(persona)}`);
+    if (theme) query.push(`theme=${encodeURIComponent(theme)}`);
+    await this.page.goto(query.length ? `/?${query.join('&')}` : '/');
   }
 
   async reload() {
@@ -29,6 +38,19 @@ class PortfolioPage {
 
   async followHomeLink() {
     await this.homeLink.click();
+  }
+
+  async scrollToProjects() {
+    await this.projectsSection.scrollIntoViewIfNeeded();
+  }
+
+  async switchPersona() {
+    await this.wordmark.click();
+  }
+
+  async switchPersonaWithKey(key) {
+    await this.wordmark.focus();
+    await this.page.keyboard.press(key);
   }
 
   async toggleTheme() {

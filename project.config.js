@@ -5,8 +5,8 @@ module.exports = Object.freeze({
   }),
   application: Object.freeze({
     repository: 'https://github.com/hambaliFadib/portofolio-web',
-    ref: 'dev',
-    sha: '5915098e2aa507a451f58e70547abded3023f8d9',
+    ref: 'feat/approved-identity-journey-v1',
+    sha: '484ec044ae955cd376e1c9814033932102be60df',
     unitModule: 'lib/date-ranges.ts',
   }),
   suites: Object.freeze(['unit', 'http-smoke', 'ui-e2e']),
