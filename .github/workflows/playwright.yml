@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: hambaliFadib/portofolio-web
-          ref: 5915098e2aa507a451f58e70547abded3023f8d9
+          ref: 484ec044ae955cd376e1c9814033932102be60df
           path: portfolio-app
           fetch-depth: 1
           persist-credentials: false
@@ -48,7 +48,7 @@ jobs:
             exit 1
           fi
           app_sha="$(git -C "$GITHUB_WORKSPACE/portfolio-app" rev-parse HEAD)"
-          expected_app_sha="5915098e2aa507a451f58e70547abded3023f8d9"
+          expected_app_sha="484ec044ae955cd376e1c9814033932102be60df"
           if [[ "$app_sha" != "$expected_app_sha" ]]; then
             echo "Application checkout mismatch: expected $expected_app_sha but found $app_sha" >&2
             exit 1
@@ -179,7 +179,7 @@ jobs:
           STAGE_EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
           STAGE_EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
           QA_SOURCE_PIN: ${{ github.sha }}
-          APP_TEST_PIN: 5915098e2aa507a451f58e70547abded3023f8d9
+          APP_TEST_PIN: 484ec044ae955cd376e1c9814033932102be60df
         shell: bash
         run: |
           set -euo pipefail
@@ -196,7 +196,7 @@ jobs:
         env:
           QA_TESTED_SHA: ${{ github.sha }}
           QA_EVENT: ${{ github.event_name }}
-          APP_SHA: 5915098e2aa507a451f58e70547abded3023f8d9
+          APP_SHA: 484ec044ae955cd376e1c9814033932102be60df
           FRAMEWORK_SHA: b5b46cc60b834ffe5ae0fcfc38d8d87921bd490d
           VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
           BUILD_OUTCOME: ${{ steps.app_build.outcome }}
