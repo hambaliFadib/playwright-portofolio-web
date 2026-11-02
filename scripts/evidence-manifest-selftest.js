@@ -23,17 +23,24 @@ try {
     'test-results/.hidden', 'artifacts/evidence-manifest.json', 'artifacts/malicious.json']) {
     assert.equal(allowedPath(value), false, 'unsafe path must be denied: ' + value);
   }
+  assert.equal(allowedPath('playwright-report/trace/manifest.webmanifest'), true);
+  assert.equal(allowedPath('playwright-report/other.webmanifest'), false);
+  assert.equal(allowedPath('test-results/trace/manifest.webmanifest'), false);
+  file('playwright-report/trace/manifest.webmanifest', '{"name":"trace"}');
   file('artifacts/portfolio-build.log', 'build evidence\n');
   file('test-results/case/trace.zip', 'fake trace bytes');
   const missing = buildManifest(root, context);
   assert.equal(missing.evidenceStatus, 'incomplete');
   assert.equal(missing.provenanceStatus, 'missing');
   assert.equal(missing.report.status, 'missing');
-  assert.deepEqual(missing.files.map((x) => x.path), ['artifacts/portfolio-build.log', 'test-results/case/trace.zip']);
+  assert.deepEqual(missing.files.map((x) => x.path), ['artifacts/portfolio-build.log', 'playwright-report/trace/manifest.webmanifest', 'test-results/case/trace.zip']);
   const manifest = writeManifest(root, context);
   assert.deepEqual(verifyManifest(root, manifest, context), manifest);
   assert.equal(manifest.files[0].sha256, crypto.createHash('sha256').update('build evidence\n').digest('hex'));
   assert.equal(fs.existsSync(path.join(root, 'artifacts/evidence-manifest.json')), true);
+  const traceManifest = manifest.files.find((entry) => entry.path === 'playwright-report/trace/manifest.webmanifest');
+  assert.equal(traceManifest.sha256, crypto.createHash('sha256').update('{"name":"trace"}').digest('hex'));
+  assert.equal(traceManifest.bytes, Buffer.byteLength('{"name":"trace"}'));
   const duplicate = JSON.parse(JSON.stringify(manifest));
   duplicate.files.push(duplicate.files[0]);
   mustFail('duplicate path', () => verifyManifest(root, duplicate, context));
@@ -82,7 +89,7 @@ try {
   fs.symlinkSync(linkTarget, link);
   mustFail('symlink', () => buildManifest(root, context));
   fs.rmSync(link);
-  assert.equal(buildManifest(root, context).files.length, 3); // manifest is excluded; existing 2 files + target.txt
+  assert.equal(buildManifest(root, context).files.length, 4); // manifest excluded; 3 evidence files + target.txt
   console.log('P4-A evidence manifest negative and checksum self-tests passed.');
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
