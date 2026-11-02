@@ -6,19 +6,22 @@ test('Dark to Light commits the theme and persists it after reload', async ({ po
   await expect(portfolioPage.heroHeading).toBeVisible();
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({ rootTheme: 'dark' });
 
+  await expect(portfolioPage.themeToggle).toHaveAccessibleName('Switch to light mode');
   await portfolioPage.toggleTheme();
 
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({
     rootTheme: 'light',
     storedTheme: 'light',
-    sceneState: 'idle',
+    appearance: 'light',
   });
 
+  await expect(portfolioPage.themeToggle).toHaveAccessibleName('Switch to dark mode');
   await portfolioPage.reload();
 
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({
     rootTheme: 'light',
     storedTheme: 'light',
+    appearance: 'light',
   });
 });
 
@@ -29,20 +32,24 @@ test('Light to Dark commits the theme and persists it after reload', async ({ po
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({
     rootTheme: 'light',
     storedTheme: 'light',
+    appearance: 'light',
   });
 
+  await expect(portfolioPage.themeToggle).toHaveAccessibleName('Switch to dark mode');
   await portfolioPage.toggleTheme();
 
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({
     rootTheme: 'dark',
     storedTheme: 'dark',
-    sceneState: 'idle',
+    appearance: 'dark',
   });
 
+  await expect(portfolioPage.themeToggle).toHaveAccessibleName('Switch to light mode');
   await portfolioPage.reload();
 
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({
     rootTheme: 'dark',
     storedTheme: 'dark',
+    appearance: 'dark',
   });
 });
