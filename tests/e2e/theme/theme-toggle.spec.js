@@ -29,9 +29,11 @@ test('Light to Dark commits the theme and persists it after reload', async ({ po
   await portfolioPage.goto({ initialTheme: 'light' });
 
   await expect(portfolioPage.heroHeading).toBeVisible();
+  // The URL controls the initial server render. localStorage is persisted only
+  // after the user toggles appearance; a clean browser starts without that key.
   await expect.poll(() => portfolioPage.getThemeState()).toMatchObject({
     rootTheme: 'light',
-    storedTheme: 'light',
+    storedTheme: null,
     appearance: 'light',
   });
 
