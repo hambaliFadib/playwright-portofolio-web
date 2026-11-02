@@ -38,6 +38,8 @@ function allowedPath(relative) {
   if (relative === MANIFEST_PATH || relative === 'artifacts/.gitkeep' ||
       relative === 'test-results/.last-run.json') return false;
   if (parts.some((part) => part.startsWith('.'))) return false;
+  // Playwright trace viewer emits this one fixed manifest; deny other .webmanifest files.
+  if (relative === 'playwright-report/trace/manifest.webmanifest') return true;
   if (parts[0] === 'artifacts') {
     return parts.length === 2 && ARTIFACT_NAMES.has(parts[1]);
   }
