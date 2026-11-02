@@ -20,15 +20,12 @@ class PortfolioPage {
       if (!['dark', 'light'].includes(initialTheme)) {
         throw new Error('initialTheme must be dark or light.');
       }
-      await this.page.addInitScript((theme) => {
-        if (window.localStorage.getItem('theme') === null) {
-          window.localStorage.setItem('theme', theme);
-        }
-      }, initialTheme);
+      // SSR derives its initial appearance from URL/cookie, not localStorage.
+      // Use the URL contract for deterministic first render.
     }
     const query = [];
     if (persona) query.push(`persona=${encodeURIComponent(persona)}`);
-    if (theme) query.push(`theme=${encodeURIComponent(theme)}`);
+    if (theme || initialTheme) query.push(`theme=${encodeURIComponent(theme || initialTheme)}`);
     await this.page.goto(query.length ? `/?${query.join('&')}` : '/');
   }
 
@@ -59,7 +56,6 @@ class PortfolioPage {
 
   async getThemeState() {
     return this.page.locator('html').evaluate((root) => {
-      const scene = document.querySelector('svg[data-state][data-progress]');
       const rootTheme = root.classList.contains('light')
         ? 'light'
         : root.classList.contains('dark')
@@ -69,7 +65,7 @@ class PortfolioPage {
       return {
         rootTheme,
         storedTheme: window.localStorage.getItem('theme'),
-        sceneState: scene?.getAttribute('data-state') || null,
+        appearance: document.querySelector('#portfolio-identity')?.getAttribute('data-appearance') || null,
       };
     });
   }
