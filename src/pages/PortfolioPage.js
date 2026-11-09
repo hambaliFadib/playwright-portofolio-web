@@ -10,7 +10,7 @@ class PortfolioPage {
     this.primaryNavigation = page.getByRole('navigation', { name: 'Primary' });
     this.homeLink = page.getByRole('link', { name: 'Home', exact: true });
     this.projectsSection = page.locator('#projects');
-    this.wordmark = page.getByRole('button', { name: /^Switch to (Full Stack Engineer|QA Engineer)$/ });
+    this.wordmark = page.getByRole('button', { name: /Switch to (Full Stack Engineer|QA Engineer)$/ });
     this.identitySurface = page.locator('#portfolio-identity');
     this.themeToggle = page.getByRole('button', { name: /Switch to (light|dark) mode/ });
   }
