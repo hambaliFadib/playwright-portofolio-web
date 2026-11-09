@@ -45,8 +45,8 @@ jobs:
             throw new Error('project.config.js application.sha must be a full 40-character commit SHA.');
           }
           const sha = application.sha.toLowerCase();
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\\n`);
-          fs.appendFileSync(process.env.GITHUB_ENV, `PORTFOLIO_APP_TEST_SHA=${sha}\\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `PORTFOLIO_APP_TEST_SHA=${sha}\n`);
           console.log(`Pinned portfolio application: ${application.ref} @ ${sha}`);
           NODE
 
