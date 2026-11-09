@@ -10,20 +10,20 @@ test('homepage renders QA, Home navigation stays in QA, and the wordmark switche
   await portfolioPage.scrollToProjects();
   await portfolioPage.followHomeLink();
   await expect(page).toHaveURL(/#top$/);
-  await expect(portfolioPage.wordmark).toHaveAttribute('aria-label', 'Switch to Full Stack Engineer');
+  await expect(portfolioPage.wordmark).toHaveAttribute('aria-label', 'Hambali Fadib, QA Engineer. Switch to Full Stack Engineer');
   await expect(portfolioPage.heroHeading).toBeVisible();
 
   await portfolioPage.switchPersonaWithKey('Space');
   await page.waitForURL((url) => url.pathname === '/' && url.searchParams.get('persona') === 'fullstack' && url.searchParams.get('theme') === 'dark' && url.hash === '#top');
   await expect(portfolioPage.identitySurface).toHaveAttribute('aria-busy', 'false');
-  await expect(portfolioPage.wordmark).toHaveAttribute('aria-label', 'Switch to QA Engineer');
+  await expect(portfolioPage.wordmark).toHaveAttribute('aria-label', 'Hambali Fadib, Full Stack Engineer. Switch to QA Engineer');
   await expect(portfolioPage.fullStackRole).toBeVisible();
   await expect(portfolioPage.fullStackHeroHeading).toBeVisible();
 
   await portfolioPage.switchPersonaWithKey('Enter');
   await page.waitForURL((url) => url.pathname === '/' && url.searchParams.get('persona') === 'qa' && url.searchParams.get('theme') === 'dark' && url.hash === '#top');
   await expect(portfolioPage.identitySurface).toHaveAttribute('aria-busy', 'false');
-  await expect(portfolioPage.wordmark).toHaveAttribute('aria-label', 'Switch to Full Stack Engineer');
+  await expect(portfolioPage.wordmark).toHaveAttribute('aria-label', 'Hambali Fadib, QA Engineer. Switch to Full Stack Engineer');
   await expect(portfolioPage.heroHeading).toBeVisible();
 
   await page.goBack();
