@@ -27,12 +27,35 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Resolve pinned application revision from project.config.js
+        id: app_pin
+        working-directory: portfolio-qa
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const project = require('./project.config');
+          const expectedRepository = 'https://github.com/hambaliFadib/portofolio-web';
+          const application = project.application;
+          if (!application || application.repository !== expectedRepository) {
+            throw new Error('project.config.js application repository does not match the approved portfolio repository.');
+          }
+          if (typeof application.sha !== 'string' || !/^[0-9a-f]{40}$/i.test(application.sha)) {
+            throw new Error('project.config.js application.sha must be a full 40-character commit SHA.');
+          }
+          const sha = application.sha.toLowerCase();
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `PORTFOLIO_APP_TEST_SHA=${sha}\n`);
+          console.log(`Pinned portfolio application: ${application.ref} @ ${sha}`);
+          NODE
+
       - name: Checkout pinned portfolio application
         id: checkout_app
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: hambaliFadib/portofolio-web
-          ref: 484ec044ae955cd376e1c9814033932102be60df
+          ref: ${{ steps.app_pin.outputs.sha }}
           path: portfolio-app
           fetch-depth: 1
           persist-credentials: false
@@ -48,7 +71,7 @@ jobs:
             exit 1
           fi
           app_sha="$(git -C "$GITHUB_WORKSPACE/portfolio-app" rev-parse HEAD)"
-          expected_app_sha="484ec044ae955cd376e1c9814033932102be60df"
+          expected_app_sha="$PORTFOLIO_APP_TEST_SHA"
           if [[ "$app_sha" != "$expected_app_sha" ]]; then
             echo "Application checkout mismatch: expected $expected_app_sha but found $app_sha" >&2
             exit 1
@@ -179,7 +202,7 @@ jobs:
           STAGE_EVIDENCE_SELFTEST: ${{ steps.evidence_selftest.outcome }}
           STAGE_EVIDENCE_MANIFEST: ${{ steps.evidence_manifest.outcome }}
           QA_SOURCE_PIN: ${{ github.sha }}
-          APP_TEST_PIN: 484ec044ae955cd376e1c9814033932102be60df
+          APP_TEST_PIN: ${{ steps.app_pin.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -196,7 +219,7 @@ jobs:
         env:
           QA_TESTED_SHA: ${{ github.sha }}
           QA_EVENT: ${{ github.event_name }}
-          APP_SHA: 484ec044ae955cd376e1c9814033932102be60df
+          APP_SHA: ${{ steps.app_pin.outputs.sha }}
           FRAMEWORK_SHA: b5b46cc60b834ffe5ae0fcfc38d8d87921bd490d
           VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
           BUILD_OUTCOME: ${{ steps.app_build.outcome }}
