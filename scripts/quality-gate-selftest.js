@@ -72,7 +72,7 @@ function genuineFailure(qaRoot) {
   }
 }
 function main() {
-  assert.equal(project.application.sha, '484ec044ae955cd376e1c9814033932102be60df', 'Standalone pinned application default changed.');
+  assert.equal(project.application.sha, 'b3ceb744b28e9d328687f656688fdff0ff0152f6', 'Standalone pinned application default changed.');
   assert.equal(resolveExpectedApplicationSha({}), project.application.sha, 'Standalone default must stay pinned.');
   assert.equal(resolveExpectedApplicationSha({ PORTFOLIO_APP_TEST_SHA: '4'.repeat(40) }), '4'.repeat(40), 'Explicit immutable override must be honored.');
   assert.equal(validateRevisionContract(validContract()).applicationTestedSha, '1'.repeat(40));
